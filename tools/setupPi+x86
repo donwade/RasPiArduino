@@ -56,11 +56,12 @@ if [ "$NAME" == "x86_64" ]; then
     fi
     
     GREEN "getting arduino-$ARDUINO_VER"
-    wget -q https://github.com/arduino/Arduino/releases/download/$ARDUINO_VER/arduino-$ARDUINO_VER.tar.xz
-    
+    set -x
+
+    wget -q https://downloads.arduino.cc/arduino-$ARDUINO_VER-linux64.tar.xz 
     GREEN "untarring ...."
-    tar -C $HOME -xf arduino-$ARDUINO_VER.tar.xz
-    rm arduino-$ARDUINO_VER.tar.xz
+    tar -C $HOME -xf arduino-$ARDUINO_VER-linux64.tar.xz
+    rm *.tar.xz
     
     
     GREEN "verify arduino install"
