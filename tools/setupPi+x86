@@ -78,7 +78,13 @@ if [ "$NAME" == "x86_64" ]; then
     else
         GREEN "RasPiArduino git already in place"
     fi
-    
+
+    # the repository may exit but it might not be at the latest 
+    pushd .
+    cd $GIT_INSTALL
+    git config pull.ff only
+    git pull origin MyChanges
+    popd 
     
     GREEN "getting cross compiler tools"
     ## 64 bit pi cross tool wget -v https://github.com/me-no-dev/RasPiArduino/releases/download/0.0.1/arm-linux-gnueabihf-linux64.tar.gz
@@ -122,6 +128,9 @@ else
  
     #--------
     cd $GIT_INSTALL
+    git config pull.ff only
+    git pull origin MyChanges # ensure we are at latest
+
     GREEN "verify git dir"
     ls 
 
