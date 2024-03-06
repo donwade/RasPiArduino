@@ -2,94 +2,137 @@
 #!/bin/bash
 ARDUINO_VER=1.8.19
 ARDUINO_BASE=$HOME/arduino-$ARDUINO_VER
-
-#--------------------------------------------------------------
+    
+    #--------------------------------------------------------------
 
 function REPORT_ERROR
 {
   set +xeE
   printf "$(tput bold)$(tput setaf 1)" 1>&2
-  printf "STOPPED: %s\n"  " $(realpath ${BASH_SOURCE[0]##*/}):${BASH_LINENO[1]}"  # ;
+  printf "STOPPED: %s\n"  " ${BASH_SOURCE[0]}:${BASH_LINENO[0]} in ${FUNCNAME[-1]}"
+  #printf "STOPPED: %s\n"  " $(realpath $0):${BASH_LINENO[0]}"
   printf "$(tput setaf 0)$(tput sgr 0)\n" 1>&2
+  echo $(realpath $0)
   # enable below to get call stack with filename: lineno: funcnames
+  #typeset -p = show variable to stdout without using echo
+  
   typeset -p BASH_SOURCE; typeset -p BASH_LINENO; typeset -p FUNCNAME
   exit
 }
+
+
 #--------------------------------------------------------------
 reset
 WORK=$(mktemp -d)
 cd $WORK
 echo $PWD
+ 
+NAME=`uname -m`
 
-echo "installing into $ARDUINO_BASE"
+if [ "$NAME" == "x86_64" ]; then
 
-ask "are you sure you want to blow away your arduino install"
-if [ $? == 0 ]; then
-    RED "exit early"
+    echo "installing into $ARDUINO_BASE"
+    
+    ask "are you sure you want to blow away your arduino install"
+    if [ $? == 0 ]; then
+        RED "exit early"
+        exit
+    fi
+    
+    trap REPORT_ERROR ERR 
+    set -eE  # same as: `set -o errexit -o errtrace`                                     
+    
+    
+    # dont loose last run.
+    cp /home/dwade/tools-dev/RasPiArduino/tools/setupPi+x86 ~
+    
+    # install currently exists ... detach all softlinks nicely
+    if [ -d $ARDUINO_BASE ]; then
+        find -L $ARDUINO_BASE -type l -exec rm -f {} \;
+        rm -rf $ARDUINO_BASE
+    fi
+    
+    GREEN "getting arduino-$ARDUINO_VER"
+    wget -q https://github.com/arduino/Arduino/releases/download/$ARDUINO_VER/arduino-$ARDUINO_VER.tar.xz
+    
+    GREEN "untarring ...."
+    tar -C $HOME -xf arduino-$ARDUINO_VER.tar.xz
+    rm arduino-$ARDUINO_VER.tar.xz
+    
+    
+    GREEN "verify arduino install"
+    touch $HOME/arduino-$ARDUINO_VER
+    ls $HOME/arduino-$ARDUINO_VER
+    echo
+    
+    
+    GREEN "checking for github tools"
+    GIT_INSTALL="$HOME/tools-dev/RasPiArduino"
+    if [ ! -d "$GIT_INSTALL"  ]; then
+        GREEN "getting github RaspiArduino "
+        git clone https://github.com/donwade/RasPiArduino.git $GIT_INSTALL
+    
+    else
+        GREEN "RasPiArduino git already in place"
+    fi
+    
+    
+    GREEN "getting cross compiler tools"
+    ## 64 bit pi cross tool wget -v https://github.com/me-no-dev/RasPiArduino/releases/download/0.0.1/arm-linux-gnueabihf-linux64.tar.gz
+    wget -q https://github.com/me-no-dev/RasPiArduino/releases/download/0.0.1/arm-linux-gnueabihf-linux32.tar.gz
+    ls
+    
+    echo 
+    
+    GREEN "attaching rpi boards into arduino install ..."
+    mkdir -p $ARDUINO_BASE/hardware/RaspberryPi
+    ln -s $HOME/tools-dev/RasPiArduino/. $ARDUINO_BASE/hardware/RaspberryPi/piduino
+    YELLOW "ls $ARDUINO_BASE/hardware/RaspberryPi/piduino"
+    ls $ARDUINO_BASE/hardware/RaspberryPi/piduino
+    echo
+    
+    tar -C $ARDUINO_BASE/hardware/RaspberryPi/piduino/tools -xf $WORK/*.gz
+    echo
+
+    GREEN "viewing tools directory"
+    ls $ARDUINO_BASE/hardware/RaspberryPi/piduino/tools
+    echo
+    ls $ARDUINO_BASE/hardware/RaspberryPi/piduino/tools/arm*
+    
+
+else
+   reset
+    GREEN "running $0 on raspi for x86 to run remote raspi"
+    apt-get update
+    apt-get install telnet git
+
+    # Copy all files from tools/arpi_bins to /usr/local/bin
+
+    GREEN "checking for github tools"
+    GIT_INSTALL="$HOME/tools-dev/RasPiArduino"
+    if [ ! -d "$GIT_INSTALL"  ]; then
+        GREEN "getting github RaspiArduino "
+        git clone https://github.com/donwade/RasPiArduino.git $GIT_INSTALL
+    else
+        GREEN "RasPiArduino git already in place"
+    fi
+ 
+    #--------
+    git clone https://github.com/me-no-dev/RasPiArduino.git piduino
+    chmod +x piduino/tools/arpi_bins/*
+    cp piduino/tools/arpi_bins/* /usr/local/bin
+    rm -rf piduino
+
     exit
 fi
 
-trap REPORT_ERROR ERR 
-set -eE  # same as: `set -o errexit -o errtrace`                                     
-
-
-# dont loose last run.
-cp /home/dwade/tools-dev/RasPiArduino/tools/setupPi+x86 ~
-
-# install currently exists ... detach all softlinks nicely
-if [ -d $ARDUINO_BASE ]; then
-    find -L $ARDUINO_BASE -type l -exec rm -f {} \;
-    rm -rf $ARDUINO_BASE
-fi
-
-GREEN "getting arduino-$ARDUINO_VER"
-wget -q https://github.com/arduino/Arduino/releases/download/$ARDUINO_VER/arduino-$ARDUINO_VER.tar.xz
-
-GREEN "untarring ...."
-tar -C $HOME -xf arduino-$ARDUINO_VER.tar.xz
-rm arduino-$ARDUINO_VER.tar.xz
-
-
-GREEN "verify arduino install"
-touch $HOME/arduino-$ARDUINO_VER
-ls $HOME/arduino-$ARDUINO_VER
-echo
-
-
-GREEN "checking for github tools"
-GIT_INSTALL="$HOME/tools-dev/RasPiArduino"
-if [ ! -d "$GIT_INSTALL"  ]; then
-    GREEN "getting github RaspiArduino "
-    git clone https://github.com/donwade/RasPiArduino.git $GIT_INSTALL
-
-else
-    GREEN "RasPiArduino git already in place"
-fi
-
-
-GREEN "getting cross compiler tools"
-## 64 bit pi cross tool wget -v https://github.com/me-no-dev/RasPiArduino/releases/download/0.0.1/arm-linux-gnueabihf-linux64.tar.gz
-wget -q https://github.com/me-no-dev/RasPiArduino/releases/download/0.0.1/arm-linux-gnueabihf-linux32.tar.gz
-ls
-
-echo 
-
-GREEN "attaching rpi boards into arduino install ..."
-mkdir -p $ARDUINO_BASE/hardware/RaspberryPi
-ln -s $HOME/tools-dev/RasPiArduino/. $ARDUINO_BASE/hardware/RaspberryPi/piduino
-YELLOW "ls $ARDUINO_BASE/hardware/RaspberryPi/piduino"
-ls $ARDUINO_BASE/hardware/RaspberryPi/piduino
-echo
-
-ls $ARDUINO_BASE/hardware/RaspberryPi/piduino/tools
-tar -C $ARDUINO_BASE/hardware/RaspberryPi/piduino/tools -xvf $WORK/*.gz
-echo
-
-ls $ARDUINO_BASE/hardware/RaspberryPi/piduino/tools
-
 # ------------------------------------
 # exiting 
+# whichver is newer ....  update oldest to newest
+cp -u $HOME/Scripts/common/setupPi+x86 $GIT_INSTALL/tools || true
+cp -u $GIT_INSTALL/tools/setupPi+x86 $HOME/Scripts/common || true
 
+cd    
 rm -rf $WORK
 
 set +exE
@@ -97,7 +140,9 @@ echo
 GREEN "DONE."
 
 exit
-#------------------------------------------------------------------------
+
+
+    #------------------------------------------------------------------------
 
 [![Join the chat at https://gitter.im/me-no-dev/RasPiArduino](https://badges.gitter.im/me-no-dev/RasPiArduino.svg)](https://gitter.im/me-no-dev/RasPiArduino?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
