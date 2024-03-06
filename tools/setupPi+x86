@@ -26,7 +26,9 @@ reset
 WORK=$(mktemp -d)
 cd $WORK
 echo $PWD
- 
+[ -d $WORK ] || exit   # directory failed to create
+
+
 NAME=`uname -m`
 
 if [ "$NAME" == "x86_64" ]; then
@@ -36,6 +38,7 @@ if [ "$NAME" == "x86_64" ]; then
     ask "are you sure you want to blow away your arduino install"
     if [ $? == 0 ]; then
         RED "exit early"
+        rm -rf $WORK
         exit
     fi
     
@@ -103,8 +106,8 @@ if [ "$NAME" == "x86_64" ]; then
 else
    reset
     GREEN "running $0 on raspi for x86 to run remote raspi"
-    apt-get update
-    apt-get install telnet git
+    #sudo apt-get update
+    #sudo apt-get -y install telnet git
 
     # Copy all files from tools/arpi_bins to /usr/local/bin
 
@@ -118,12 +121,13 @@ else
     fi
  
     #--------
-    git clone https://github.com/me-no-dev/RasPiArduino.git piduino
-    chmod +x piduino/tools/arpi_bins/*
-    cp piduino/tools/arpi_bins/* /usr/local/bin
-    rm -rf piduino
+    cd $GIT_INSTALL
+    GREEN "verify git dir"
+    ls 
 
-    exit
+    chmod +x tools/arpi_bins/*
+    cp -Rv  tools/arpi_bins/* /usr/local/bin
+
 fi
 
 # ------------------------------------
@@ -133,6 +137,8 @@ cp -u $HOME/Scripts/common/setupPi+x86 $GIT_INSTALL/tools || true
 cp -u $GIT_INSTALL/tools/setupPi+x86 $HOME/Scripts/common || true
 
 cd    
+
+
 rm -rf $WORK
 
 set +exE
