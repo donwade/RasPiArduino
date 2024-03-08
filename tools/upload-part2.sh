@@ -29,9 +29,13 @@ GREEN "running merge-sketch-with-bootloader.lua on $1"
 
 ssh dwade@$PI_HOST '/usr/local/bin/merge-sketch-with-bootloader.lua'
 
-GREEN "running run-avrdude on $1"
-ssh dwade@$PI_HOST '/usr/local/bin/run-avrdude'
+RED "running run-avrdude on $1"
+ssh -X dwade@$PI_HOST 'xterm -fa 'Monospace' -fs 14  /usr/local/bin/run-avrdude' # #| tee /tmp/run-avrdude.log'
+sleep 2
+
+ssh dwade@$PI_HOST 'cat /tmp/run-avrdude.log'
+ssh dwade@$PI_HOST 'ps -ef | grep arduino-sketch'
 
 GREEN "end of running $0 "
 GREEN "`date`"
-
+sleep 10

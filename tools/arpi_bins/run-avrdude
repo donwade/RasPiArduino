@@ -1,12 +1,26 @@
 #!/bin/bash
 #called by Arduino IDE usually to upload the HEX to the MCU
 #here we use it to start the sketch
-LOGFILE="/run/sketch.log"
-SKETCH="/tmp/sketch.bin"
+
+set -e
+echo "running $0"
+DEST_DIR=/tmp
+
+
+echo "dump and clear logs ---------------"
+LOG_FILE="/tmp/arduino.log"
+cat $LOG_FILE || true
+rm -f $LOG_FILE 
+echo "-----------------------------------"
+
+set -x
+SRC_BIN="/tmp/sketch.bin"
 
 BINNAME="arduino-sketch"
-DESTBIN="/usr/local/bin/$BINNAME"
+mkdir -p $DEST_DIR || true
 
+# copying into /usr/local/bin so it can run as root
+DEST_BIN="$DEST_DIR/$BINNAME"
 
 PIDS=`ps ax | grep telnet | grep -v grep | awk '{print $1}'`
 for pid in $PIDS; do
@@ -15,9 +29,25 @@ for pid in $PIDS; do
   sleep 1
 done
 
-killall $BINNAME > /dev/null 2>&1
-mv $SKETCH $DESTBIN
-cd /
-$DESTBIN >> $LOGFILE 2>&1 &
+killall $BINNAME  || true
 
-echo "Sketch Started"
+
+echo "whoami = `whoami`"
+echo "doing a copy + rename"
+cp -v  $SRC_BIN $DEST_BIN
+
+echo "DEST_BIN TO FOLLOW  `uname -n`"
+ls -al $DEST_BIN
+sleep 5
+
+echo "$DEST_BIN >> $LOG_FILE and password = $PISSWORD"
+
+echo "Edacs9600" | sudo -S $DEST_BIN | tee   $LOG_FILE 
+
+#echo "Edacs9600" |  xterm -e "-title "$DEST_BIN" -geometry 120x30 $DEST_BIN 2>&1"  &
+
+
+date >> $LOG_FILE
+cat $LOG_FILE
+echo "Sketch Done"
+sleep 6

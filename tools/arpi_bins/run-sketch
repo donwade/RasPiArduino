@@ -1,7 +1,11 @@
 #!/bin/bash
+
 #can be used to start a sketch
-LOGFILE="/run/sketch.log"
+
+# all raspi-arduino builds have same binary name, namely
 BINNAME="arduino-sketch"
+
+LOGFILE="/home/dwade/arduino-sketch.log"
 DESTBIN="/usr/local/bin/$BINNAME"
 
 if [ ! -f "$DESTBIN" ]; then
@@ -17,4 +21,5 @@ done
 
 killall $BINNAME > /dev/null 2>&1
 cd /
-$DESTBIN >> $LOGFILE 2>&1 &
+xterm -e " $DESTBIN -title "$DESTBIN" -geometry 120x30" >> $LOGFILE 2>&1 &
+
